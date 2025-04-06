@@ -1,0 +1,128 @@
+import { useState, useRef } from 'react'
+import { Button } from "/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "/components/ui/card"
+import { Folder, Play, Upload } from 'lucide-react'
+
+export default function VansionLauncher() {
+  const [directory, setDirectory] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleSelectDirectory = () => {
+    // Trigger the hidden file input
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null)
+    setIsLoading(true)
+    
+    const files = event.target.files
+    if (!files || files.length === 0) {
+      setError('No directory selected')
+      setIsLoading(false)
+      return
+    }
+
+    // In a real Electron app, you would use window.showDirectoryPicker()
+    // For this web version, we'll use the first selected file's directory
+    const filePath = files[0].webkitRelativePath || files[0].name
+    const directoryPath = filePath.includes('/') 
+      ? filePath.split('/')[0] 
+      : filePath.split('\\')[0]
+
+    // Simulate directory validation
+    setTimeout(() => {
+      const isValid = directoryPath.toLowerCase().includes('vansion')
+      if (isValid) {
+        setDirectory(directoryPath)
+      } else {
+        setError('Selected directory does not contain Vansion executable')
+        setDirectory(null)
+      }
+      setIsLoading(false)
+    }, 500)
+  }
+
+  const handleLaunchGame = () => {
+    if (!directory) {
+      setError('Please select a directory first')
+      return
+    }
+    
+    alert(`Launching Vansion from: ${directory}`)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <div className="bg-blue-500 text-white p-2 rounded-lg">
+              <Play className="h-5 w-5" />
+            </div>
+            Vansion Launcher
+          </CardTitle>
+          <CardDescription>
+            Select your Vansion directory and launch the game
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+            // @ts-ignore - webkitdirectory is not in the type definition
+            webkitdirectory="true"
+            directory="true"
+            multiple
+          />
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleSelectDirectory}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                {isLoading ? (
+                  <span className="animate-spin">↻</span>
+                ) : (
+                  <Folder className="h-4 w-4" />
+                )}
+                {isLoading ? 'Loading...' : 'Select Directory'}
+              </Button>
+              {directory && (
+                <div className="text-sm text-muted-foreground truncate flex-1">
+                  {directory}
+                </div>
+              )}
+            </div>
+            {error && (
+              <div className="text-sm text-red-500">
+                {error}
+              </div>
+            )}
+          </div>
+
+          <Button 
+            onClick={handleLaunchGame}
+            disabled={!directory || isLoading}
+            className="w-full flex items-center gap-2"
+          >
+            <Play className="h-4 w-4" />
+            Launch Vansion
+          </Button>
+
+          <div className="text-xs text-muted-foreground mt-4">
+            Note: In a desktop application, this would use the system file explorer.
+            This web version simulates the experience using browser APIs.
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
